@@ -3,6 +3,9 @@ test-results/
 /playwright-report/
 /playwright/.cache/
 **/*.js
+/*.js
+*.js
+*.js.map
 .vscode/settings.json
 tests/automation/todo
 allure-report

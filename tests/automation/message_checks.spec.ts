@@ -1,13 +1,17 @@
 import { englishStrippedStr } from '../locale/localizedString';
 import { sleepFor } from '../promise_utils';
+import { testCommunityName } from './constants/community';
+import { longText } from './constants/variables';
 import { newUser } from './setup/new_user';
 import {
   sessionTestTwoWindows,
   test_Alice_1W_Bob_1W,
 } from './setup/sessionTest';
 import { createContact } from './utilities/create_contact';
+import { joinCommunity } from './utilities/join_community';
 import { sendMessage } from './utilities/message';
 import { replyTo } from './utilities/reply_message';
+import { sendLinkPreview } from './utilities/send_media';
 import {
   clickOnElement,
   clickOnMatchingText,
@@ -16,6 +20,7 @@ import {
   hasTextMessageBeenDeleted,
   measureSendingTime,
   typeIntoInput,
+  waitForElement,
   waitForLoadingAnimationToFinish,
   waitForMatchingText,
   waitForTestIdWithText,
@@ -163,6 +168,7 @@ test_Alice_1W_Bob_1W(
       selector: 'send-message-button',
     });
     await sleepFor(1000);
+
     await clickOnMatchingText(
       bobWindow1,
       englishStrippedStr('attachmentsClickToDownload')
@@ -172,6 +178,8 @@ test_Alice_1W_Bob_1W(
         .toString(),
     );
     await clickOnTestIdWithText(bobWindow1, 'session-confirm-ok-button');
+    await waitForLoadingAnimationToFinish(bobWindow1, 'loading-animation');
+    await waitForElement(bobWindow1, 'class', 'rhap_progress-section');
   },
 );
 
@@ -207,12 +215,7 @@ test_Alice_1W_Bob_1W(
   'Send long text 1:1',
   async ({ alice, aliceWindow1, bob, bobWindow1 }) => {
     const testReply = `${bob.userName} replying to long text message from ${alice.userName}`;
-    const longText =
-      // eslint-disable-next-line max-len
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum quis lacinia mi. Praesent fermentum vehicula rhoncus. Aliquam ac purus lobortis, convallis nisi quis, pulvinar elit. Nam commodo eros in molestie lobortis. Donec at mattis est. In tempor ex nec velit mattis, vitae feugiat augue maximus. Nullam risus libero, bibendum et enim et, viverra viverra est. Suspendisse potenti. Sed ut nibh in sem rhoncus suscipit. Etiam tristique leo sit amet ullamcorper dictum. Suspendisse sollicitudin, lectus et suscipit eleifend, libero dui ultricies neque, non elementum nulla orci bibendum lorem. Suspendisse potenti. Aenean a tellus imperdiet, iaculis metus quis, pretium diam. Nunc varius vitae enim vestibulum interdum. In hac habitasse platea dictumst. Donec auctor sem quis eleifend fermentum. Vestibulum neque nulla, maximus non arcu gravida, condimentum euismod turpis. Cras ac mattis orci. Quisque ac enim pharetra felis sodales eleifend. Aliquam erat volutpat. Donec sit amet mollis nibh, eget feugiat ipsum. Integer vestibulum purus ac suscipit egestas. Duis vitae aliquet ligula.';
-
     await createContact(aliceWindow1, bobWindow1, alice, bob);
-
     await typeIntoInput(aliceWindow1, 'message-input-text-area', longText);
     await sleepFor(100);
     await clickOnElement({
@@ -220,6 +223,7 @@ test_Alice_1W_Bob_1W(
       strategy: 'data-testid',
       selector: 'send-message-button',
     });
+    // await waitForSentTick(aliceWindow1, longText);
     await sleepFor(1000);
     await replyTo({
       senderWindow: bobWindow1,
@@ -227,6 +231,69 @@ test_Alice_1W_Bob_1W(
       replyText: testReply,
       receiverWindow: aliceWindow1,
     });
+  },
+);
+
+test_Alice_1W_Bob_1W(
+  'Send link 1:1',
+  async ({ alice, aliceWindow1, bob, bobWindow1 }) => {
+    const testLink = 'https://getsession.org/';
+    const testReply = `${bob.userName} replying to link from ${alice.userName}`;
+
+    await createContact(aliceWindow1, bobWindow1, alice, bob);
+    await sendLinkPreview(aliceWindow1, testLink);
+    await waitForElement(
+      bobWindow1,
+      'class',
+      'module-message__link-preview__title',
+      undefined,
+      'Session | Send Messages, Not Metadata. | Private Messenger',
+    );
+    await replyTo({
+      senderWindow: bobWindow1,
+      textMessage: testLink,
+      replyText: testReply,
+      receiverWindow: aliceWindow1,
+    });
+  },
+);
+
+test_Alice_1W_Bob_1W(
+  'Send community invite',
+  async ({ alice, aliceWindow1, bob, bobWindow1 }) => {
+    await createContact(aliceWindow1, bobWindow1, alice, bob);
+    await joinCommunity(aliceWindow1);
+    await clickOnTestIdWithText(aliceWindow1, 'conversation-options-avatar');
+    await clickOnTestIdWithText(aliceWindow1, 'add-user-button');
+    await waitForTestIdWithText(
+      aliceWindow1,
+      'modal-heading',
+      englishStrippedStr('membersInvite').toString(),
+    );
+    await clickOnTestIdWithText(aliceWindow1, 'contact', bob.userName);
+    await clickOnTestIdWithText(aliceWindow1, 'session-confirm-ok-button');
+    await clickOnTestIdWithText(aliceWindow1, 'modal-close-button');
+    await clickOnTestIdWithText(
+      aliceWindow1,
+      'module-conversation__user__profile-name',
+      bob.userName,
+    );
+    await Promise.all([
+      waitForElement(
+        aliceWindow1,
+        'class',
+        'group-name',
+        undefined,
+        testCommunityName,
+      ),
+      waitForElement(
+        bobWindow1,
+        'class',
+        'group-name',
+        undefined,
+        testCommunityName,
+      ),
+    ]);
   },
 );
 
@@ -344,5 +411,51 @@ test_Alice_1W_Bob_1W(
       replyText: testReply,
       receiverWindow: aliceWindow1,
     });
+  },
+);
+
+test_Alice_1W_Bob_1W(
+  'Send community invite',
+  async ({ alice, aliceWindow1, bob, bobWindow1 }) => {
+    await createContact(aliceWindow1, bobWindow1, alice, bob);
+    await joinCommunity(aliceWindow1);
+    await clickOnTestIdWithText(aliceWindow1, 'conversation-options-avatar');
+    await clickOnTestIdWithText(aliceWindow1, 'add-user-button');
+    // Implementing in groups rebuild
+    // await waitForTestIdWithText(
+    //   aliceWindow1,
+    //   'modal-heading',
+    //   englishStrippedStr('membersInvite').toString(),
+    // );
+    // await clickOnTestIdWithText(aliceWindow1, 'contact', bob.userName);
+    await clickOnMatchingText(aliceWindow1, bob.userName);
+    // await clickOnTestIdWithText(aliceWindow1, 'session-confirm-ok-button');
+    await clickOnMatchingText(
+      aliceWindow1,
+      englishStrippedStr('okay').toString(),
+    );
+    // Implementing in groups rebuild
+    // await clickOnTestIdWithText(aliceWindow1, 'modal-close-button');
+    await clickOnTestIdWithText(
+      aliceWindow1,
+      'module-conversation__user__profile-name',
+      bob.userName,
+    );
+    await Promise.all([
+      waitForElement(
+        aliceWindow1,
+        'class',
+        'group-name',
+        undefined,
+        testCommunityName,
+      ),
+      waitForElement(
+        bobWindow1,
+        'class',
+        'group-name',
+        undefined,
+        testCommunityName,
+      ),
+    ]);
   },
 );

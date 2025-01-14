@@ -16,7 +16,6 @@ export const newUser = async (
 ): Promise<User> => {
   // Create User
   await clickOnTestIdWithText(window, 'create-account-button');
-  // await clickOnMatchingText(window, 'Continue');
   // Input username = testuser
   await typeIntoInput(window, 'display-name-input', userName);
   await clickOnTestIdWithText(window, 'continue-button');
