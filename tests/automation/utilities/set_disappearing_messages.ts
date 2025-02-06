@@ -1,4 +1,6 @@
 import { Page } from '@playwright/test';
+import { englishStrippedStr } from '../../locale/localizedString';
+import { sleepFor } from '../../promise_utils';
 import { ConversationType, DisappearOptions } from '../types/testing';
 import {
   clickOnElement,
@@ -6,8 +8,8 @@ import {
   clickOnTestIdWithText,
   doWhileWithMax,
   waitForElement,
+  waitForTestIdWithText,
 } from './utils';
-import { englishStrippedStr } from '../../locale/localizedString';
 
 export const setDisappearingMessages = async (
   windowA: Page,
@@ -53,10 +55,14 @@ export const setDisappearingMessages = async (
       defaultTime = await waitForElement(
         windowA,
         'data-testid',
-        'input-12-hours',
+        'input-time-option-12-hours',
       );
     } else {
-      defaultTime = await waitForElement(windowA, 'data-testid', 'input-1-day');
+      defaultTime = await waitForElement(
+        windowA,
+        'data-testid',
+        'input-time-option-1-days',
+      );
     }
     const checked = await defaultTime.isChecked();
     if (checked) {
@@ -77,15 +83,18 @@ export const setDisappearingMessages = async (
     strategy: 'data-testid',
     selector: 'disappear-set-button',
   });
+  await waitForTestIdWithText(windowA, 'disappear-messages-type-and-time');
   if (windowB) {
     await clickOnMatchingText(
       windowB,
       englishStrippedStr('disappearingMessagesFollowSetting').toString(),
     );
+    await sleepFor(1000);
     await clickOnElement({
       window: windowB,
       strategy: 'data-testid',
       selector: 'session-confirm-ok-button',
     });
+    await waitForTestIdWithText(windowB, 'disappear-messages-type-and-time');
   }
 };

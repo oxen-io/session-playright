@@ -4,12 +4,16 @@ import { test_group_Alice_1W_Bob_1W_Charlie_1W } from './setup/sessionTest';
 import { sendMessage } from './utilities/message';
 import { replyTo } from './utilities/reply_message';
 import {
+  checkModalStrings,
   clickOnElement,
   clickOnMatchingText,
+  clickOnTestIdWithText,
   clickOnTextMessage,
   hasTextMessageBeenDeleted,
   lookForPartialTestId,
   typeIntoInput,
+  waitForElement,
+  waitForLoadingAnimationToFinish,
   waitForMatchingText,
   waitForTestIdWithText,
   waitForTextMessage,
@@ -222,12 +226,109 @@ test_group_Alice_1W_Bob_1W_Charlie_1W(
 );
 
 test_group_Alice_1W_Bob_1W_Charlie_1W(
+  'Send link to group',
+  async ({
+    alice,
+    bob,
+    aliceWindow1,
+    bobWindow1,
+    charlieWindow1,
+    groupCreated,
+  }) => {
+    const testMessage = `${alice.userName} sending link to ${groupCreated.userName}`;
+    const testReply = `${bob.userName} replying to link from ${alice.userName} in ${groupCreated.userName}`;
+    const testLink = 'https://getsession.org/';
+    await typeIntoInput(aliceWindow1, 'message-input-text-area', testLink);
+    await clickOnElement({
+      window: aliceWindow1,
+      strategy: 'data-testid',
+      selector: 'send-message-button',
+    });
+    await clickOnTestIdWithText(
+      aliceWindow1,
+      'message-content',
+      testMessage,
+      true,
+    );
+    // Need to copy link to clipboard, as the enable link preview modal
+    // doesn't pop up if manually typing link (needs to be pasted)
+    // Need to have a nth(0) here to account for Copy Account ID, Appium was getting confused
+    const firstCopyBtn = await aliceWindow1
+      .locator(
+        `[data-testid=context-menu-item]:has-text(${englishStrippedStr(
+          'copy',
+        ).toString()})`,
+      )
+      .nth(0);
+    await firstCopyBtn.click();
+    await waitForTestIdWithText(
+      aliceWindow1,
+      'session-toast',
+      englishStrippedStr('copied').toString(),
+    );
+    await clickOnTestIdWithText(aliceWindow1, 'message-input-text-area');
+    const isMac = process.platform === 'darwin';
+    await aliceWindow1.keyboard.press(`${isMac ? 'Meta' : 'Control'}+V`);
+    await checkModalStrings(
+      aliceWindow1,
+      englishStrippedStr('linkPreviewsEnable').toString(),
+      englishStrippedStr('linkPreviewsFirstDescription')
+        .withArgs({ app_name: 'Session' })
+        .toString(),
+    );
+    await clickOnTestIdWithText(
+      aliceWindow1,
+      'session-confirm-ok-button',
+      englishStrippedStr('enable').toString(),
+    );
+    // Needs to be changed to link-preview-loading
+    await waitForLoadingAnimationToFinish(aliceWindow1, 'loading-spinner');
+    // Also needs to be implemented
+    // await waitForTestIdWithText(aliceWindow1, 'link-preview-image')
+    // await waitForTestIdWithText(
+    //   aliceWindow1,
+    //   'link-preview-title',
+    //   'Session | Send Messages, Not Metadata. | Private Messenger',
+    // );
+    await clickOnElement({
+      window: aliceWindow1,
+      strategy: 'data-testid',
+      selector: 'send-message-button',
+    });
+    await Promise.all([
+      waitForElement(
+        bobWindow1,
+        'class',
+        'module-message__link-preview__title',
+        undefined,
+        'Session | Send Messages, Not Metadata. | Private Messenger',
+      ),
+      waitForElement(
+        charlieWindow1,
+        'class',
+        'module-message__link-preview__title',
+        undefined,
+        'Session | Send Messages, Not Metadata. | Private Messenger',
+      ),
+    ]);
+    await replyTo({
+      senderWindow: bobWindow1,
+      textMessage: testMessage,
+      replyText: testReply,
+      receiverWindow: aliceWindow1,
+    });
+  },
+);
+
+test_group_Alice_1W_Bob_1W_Charlie_1W(
   'Unsend message to group',
   async ({ aliceWindow1, bobWindow1, charlieWindow1, groupCreated }) => {
     const unsendMessage = `Testing unsend functionality in ${groupCreated.userName}`;
     await sendMessage(aliceWindow1, unsendMessage);
-    await waitForTextMessage(bobWindow1, unsendMessage);
-    await waitForTextMessage(charlieWindow1, unsendMessage);
+    await Promise.all([
+      waitForTextMessage(bobWindow1, unsendMessage),
+      waitForTextMessage(charlieWindow1, unsendMessage),
+    ]);
     await clickOnTextMessage(aliceWindow1, unsendMessage, true);
     await clickOnMatchingText(
       aliceWindow1,
@@ -237,6 +338,12 @@ test_group_Alice_1W_Bob_1W_Charlie_1W(
       aliceWindow1,
       englishStrippedStr('clearMessagesForEveryone').toString(),
     );
+    // To be implemented in Standardise Message Deletion feature
+    // await checkModalStrings(
+    //   aliceWindow1,
+    //   englishStrippedStr('deleteMessage').withArgs({ count: 1 }).toString(),
+    //   englishStrippedStr('deleteMessageConfirm').toString(),
+    // );
     await clickOnElement({
       window: aliceWindow1,
       strategy: 'data-testid',

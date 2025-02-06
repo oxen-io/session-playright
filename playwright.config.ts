@@ -3,7 +3,9 @@
 import { defineConfig } from '@playwright/test';
 import { isEmpty, toNumber } from 'lodash';
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const useSessionReporter = !isEmpty(process.env.PLAYWRIGHT_CUSTOM_REPORTER);
 
@@ -23,7 +25,7 @@ export default defineConfig({
   repeatEach: process.env.PLAYWRIGHT_REPEAT_COUNT
     ? toNumber(process.env.PLAYWRIGHT_REPEAT_COUNT)
     : 0,
-  workers: toNumber(process.env.PLAYWRIGHT_WORKER_COUNT) || 1,
+  workers: toNumber(process.env.PLAYWRIGHT_WORKERS_COUNT) || 1,
   reportSlowTests: null,
   fullyParallel: true, // otherwise, tests in the same file are not run in parallel
   globalSetup: './global.setup', // clean leftovers of previous test runs on start, runs only once

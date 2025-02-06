@@ -23,9 +23,10 @@ export type DMTimeOption =
   | 'time-option-5-minutes'
   | 'time-option-1-hour'
   | 'time-option-12-hours'
-  | 'time-option-1-day'
-  | 'time-option-1-week'
-  | 'time-option-2-weeks';
+  | 'time-option-1-days'
+  | 'time-option-7-days'
+  | 'time-option-14-days'
+  | 'disappear-off-option';
 
 type DisappearOpts1o1 = [
   '1:1',
@@ -41,6 +42,8 @@ type DisappearOptsGroup = [
 
 export type DisappearOptions = DisappearOpts1o1 | DisappearOptsGroup;
 
+export type DisappearActions = 'read' | 'sent';
+
 export type StrategyExtractionObj =
   | {
       strategy: Extract<Strategy, ':has-text' | 'class'>;
@@ -55,8 +58,8 @@ export type WithPage = { window: Page };
 export type WithMaxWait = { maxWait?: number };
 export type WithRightButton = { rightButton?: boolean };
 
-export type loaderType = 'loading-animation' | 'loading-spinner';
-
+export type LoaderType = 'loading-animation' | 'loading-spinner';
+export type MediaType = 'image' | 'video' | 'audio' | 'file';
 export type Strategy = 'data-testid' | 'class' | ':has-text';
 
 // Would be good to find a way to sort those with prettier
@@ -161,4 +164,18 @@ export type DataTestId =
   | 'continue-button'
   | 'existing-account-button'
   | 'context-menu-item'
-  | 'block-unblock-modal-description';
+  | 'block-unblock-modal-description'
+  | 'session-error-message'
+  | DMTimeOption
+  | `input-${DMTimeOption}`
+  | 'disappear-messages-type-and-time'
+  | 'hide-recovery-password-button'
+  | 'chooser-new-community'
+  | 'join-community-conversation'
+  | 'join-community-button'
+  | 'scroll-to-bottom-button'
+  | 'decline-and-block-message-request'
+  | 'contact'
+  | 'modal-heading'
+  | 'call-notification-answered-a-call'
+  | 'call-notification-started-call';
