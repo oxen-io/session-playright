@@ -37,7 +37,7 @@ export default async function globalSetup() {
       ? join(homedir(), '.config')
       : null;
     if (!parentFolderOfAllDataPath) {
-      throw new Error('Only macOS/linux are currrently supported ');
+      throw new Error('Only macOS/linux are currently supported');
     }
 
     if (!parentFolderOfAllDataPath || parentFolderOfAllDataPath.length < 9) {

@@ -1,33 +1,35 @@
 import { englishStrippedStr } from '../locale/localizedString';
-import { sleepFor } from '../promise_utils';
 import { test_Alice_1W_Bob_1W } from './setup/sessionTest';
 import { createContact } from './utilities/create_contact';
-import { clickOnMatchingText, clickOnTestIdWithText } from './utilities/utils';
+import { waitForTestIdWithText } from './utilities/utils';
+import { makeVoiceCall } from './utilities/voice_call';
 
 test_Alice_1W_Bob_1W(
   'Voice calls',
   async ({ alice, aliceWindow1, bob, bobWindow1 }) => {
     await createContact(aliceWindow1, bobWindow1, alice, bob);
-    await clickOnTestIdWithText(aliceWindow1, 'call-button');
-    await clickOnTestIdWithText(aliceWindow1, 'session-toast');
-    await clickOnTestIdWithText(aliceWindow1, 'enable-calls');
-    await clickOnTestIdWithText(aliceWindow1, 'session-confirm-ok-button');
-    await clickOnTestIdWithText(aliceWindow1, 'message-section');
-    await clickOnTestIdWithText(
-      aliceWindow1,
-      'module-conversation__user__profile-name',
-      bob.userName,
-    );
-    await clickOnTestIdWithText(aliceWindow1, 'call-button');
-    // Enable calls in window B
-    await clickOnTestIdWithText(bobWindow1, 'session-toast');
-    await clickOnTestIdWithText(bobWindow1, 'enable-calls');
-    await clickOnTestIdWithText(bobWindow1, 'session-confirm-ok-button');
-    await clickOnMatchingText(
+    await makeVoiceCall(aliceWindow1, bobWindow1, alice, bob);
+    // In the receivers window, the message is 'Call in progress'
+    await waitForTestIdWithText(
       bobWindow1,
-      englishStrippedStr('accept').toString(),
+      'call-notification-answered-a-call',
+      englishStrippedStr('callsInProgress').toString(),
     );
-    await sleepFor(5000);
-    await clickOnTestIdWithText(aliceWindow1, 'end-call');
+    // Control message should be '{callerName} called you'
+    // await waitForTestIdWithText(
+    //   bobWindow1,
+    //   'call-notification-answered-a-call',
+    //   englishStrippedStr('callsCalledYou')
+    //     .withArgs({ name: caller.userName })
+    //     .toString(),
+    // );
+    // In the callers window, the message is 'You called {reciverName}'
+    await waitForTestIdWithText(
+      aliceWindow1,
+      'call-notification-started-call',
+      englishStrippedStr('callsYouCalled')
+        .withArgs({ name: bob.userName })
+        .toString(),
+    );
   },
 );

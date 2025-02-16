@@ -59,6 +59,7 @@ export const createGroup = async (
   // Create group with existing contact and session ID (of non-contact)
   // Click new closed group tab
   await clickOnTestIdWithText(windowA, 'new-conversation-button');
+  await waitForTestIdWithText(windowA, 'chooser-new-group');
   await clickOnTestIdWithText(windowA, 'chooser-new-group');
   // Enter group name
   await typeIntoInput(windowA, 'new-closed-group-name', group.userName);

@@ -9,7 +9,6 @@ import {
 export async function recoverFromSeed(window: Page, recoveryPhrase: string) {
   await clickOnTestIdWithText(window, 'existing-account-button');
   await typeIntoInput(window, 'recovery-phrase-input', recoveryPhrase);
-  // await typeIntoInput(window, 'display-name-input', userName);
   await clickOnTestIdWithText(window, 'continue-button');
   await waitForLoadingAnimationToFinish(window, 'loading-animation');
   const displayName = await doesElementExist(

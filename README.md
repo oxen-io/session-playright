@@ -42,7 +42,7 @@ Create your own config from the `.env.sample` and edit the values to match your 
   - *type*: number
   - *default*: 0
   - *description*: the number of retries each test. i.e. if a test **failed** on attempt x, and our current attempt is `< PLAYWRIGHT_RETRIES_COUNT` the test will be scheduled to be run again. This can be used to debug flaky tests
-- `PLAYWRIGHT_WORKER_COUNT`
+- `PLAYWRIGHT_WORKERS_COUNT`
   - *type*: number
   - *default*: 1
   - *description*: the number of workers to start in parallel. The more, the faster the test suite is going to run, but if you hit your CPU limit they'll start to be unnecessarily flaky. Should be fine with a value between 10-20 depending on the machine.

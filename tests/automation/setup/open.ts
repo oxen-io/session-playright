@@ -27,28 +27,6 @@ function getSessionDesktopBinPath() {
   return process.env.SESSION_DESKTOP_BIN as string;
 }
 
-export async function openApp(windowsToCreate: number) {
-  if (windowsToCreate >= multisAvailable.length) {
-    throw new Error(`Do you really need ${multisAvailable.length} windows?!`);
-  }
-  // if windowToCreate = 3, this array will be ABC. If windowToCreate = 5, this array will be ABCDE
-  const multisToUse = multisAvailable.slice(0, windowsToCreate);
-
-  const array = [...multisToUse];
-  const toRet = [];
-  // not too sure why, but launching those windows with Promise.all triggers a sqlite error...
-  for (let index = 0; index < array.length; index++) {
-    const element = array[index];
-    // eslint-disable-next-line no-await-in-loop
-    const openedWindow = await openAppAndWait(`${element}`);
-    toRet.push(openedWindow);
-  }
-  console.log(
-    chalk.bgRedBright(`Pathway to app: `, process.env.SESSION_DESKTOP_ROOT),
-  );
-  return toRet;
-}
-
 const openElectronAppOnly = async (multi: string) => {
   process.env.MULTI = `${multi}`;
   // using a v4 uuid, as timestamps to the ms are sometimes the same (when a bunch of workers are started)
@@ -108,3 +86,25 @@ const openAppAndWait = async (multi: string) => {
   });
   return window;
 };
+
+export async function openApp(windowsToCreate: number) {
+  if (windowsToCreate >= multisAvailable.length) {
+    throw new Error(`Do you really need ${multisAvailable.length} windows?!`);
+  }
+  // if windowToCreate = 3, this array will be ABC. If windowToCreate = 5, this array will be ABCDE
+  const multisToUse = multisAvailable.slice(0, windowsToCreate);
+
+  const array = [...multisToUse];
+  const toRet = [];
+  // not too sure why, but launching those windows with Promise.all triggers a sqlite error...
+  for (let index = 0; index < array.length; index++) {
+    const element = array[index];
+    // eslint-disable-next-line no-await-in-loop
+    const openedWindow = await openAppAndWait(`${element}`);
+    toRet.push(openedWindow);
+  }
+  console.log(
+    chalk.bgRedBright(`Pathway to app: `, process.env.SESSION_DESKTOP_ROOT),
+  );
+  return toRet;
+}

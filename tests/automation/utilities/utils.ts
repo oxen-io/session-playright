@@ -4,15 +4,21 @@
 import { ElementHandle, Page } from '@playwright/test';
 import { sleepFor } from '../../promise_utils';
 import {
+  DMTimeOption,
   DataTestId,
+  LoaderType,
   Strategy,
   StrategyExtractionObj,
   WithMaxWait,
   WithPage,
   WithRightButton,
-  loaderType,
 } from '../types/testing';
+// eslint-disable-next-line import/no-cycle
+import fs from 'fs';
+import path from 'path';
 import { sendMessage } from './message';
+import { ElementState } from '../landing_page.spec';
+import { screenshotFolder } from '../constants/variables';
 
 // WAIT FOR FUNCTIONS
 
@@ -134,7 +140,7 @@ export async function waitForMatchingPlaceholder(
 }
 export async function waitForLoadingAnimationToFinish(
   window: Page,
-  loader: loaderType,
+  loader: LoaderType,
   maxWait?: number,
 ) {
   let loadingAnimation: ElementHandle<SVGElement | HTMLElement> | undefined;
@@ -156,6 +162,35 @@ export async function waitForLoadingAnimationToFinish(
     }
   } while (loadingAnimation);
   console.info('Loading animation has finished');
+}
+
+export async function doWhileWithMax(
+  maxWaitMs: number,
+  waitBetweenMs: number,
+  label: string,
+  actionTodo: () => Promise<boolean>,
+) {
+  const start = Date.now();
+  let iteration = 0;
+  let wasSuccess = false;
+  do {
+    try {
+      wasSuccess = await actionTodo();
+    } catch (e) {
+      console.error(
+        `doWhileWithMax with label:"${label}" iteration:${iteration} failed with: ${e.message}`,
+        e,
+      );
+    }
+    iteration++;
+    await sleepFor(waitBetweenMs);
+  } while (!wasSuccess && Date.now() - start < maxWaitMs);
+
+  if (!wasSuccess) {
+    throw new Error(
+      `doWhileWithMax with label:"${label}" still failing after ${maxWaitMs}ms`,
+    );
+  }
 }
 
 export async function checkPathLight(window: Page, maxWait?: number) {
@@ -436,31 +471,96 @@ export async function measureSendingTime(window: Page, messageNumber: number) {
   return timeMs;
 }
 
-export async function doWhileWithMax(
-  maxWaitMs: number,
-  waitBetweenMs: number,
-  label: string,
-  actionTodo: () => Promise<boolean>,
+export async function checkModalStrings(
+  window: Page,
+  expectedHeading: string,
+  expectedDescription: string,
 ) {
-  const start = Date.now();
-  let iteration = 0;
-  let wasSuccess = false;
-  do {
-    try {
-      wasSuccess = await actionTodo();
-    } catch (e) {
-      console.error(
-        `doWhileWithMax with label:"${label}" iteration:${iteration} failed with: ${e.message}`,
-        e,
-      );
-    }
-    iteration++;
-    await sleepFor(waitBetweenMs);
-  } while (!wasSuccess && Date.now() - start < maxWaitMs);
+  const heading = await waitForElement(window, 'data-testid', 'modal-heading');
+  const description = await waitForElement(
+    window,
+    'data-testid',
+    'modal-description',
+  );
 
-  if (!wasSuccess) {
+  const headingText = await heading.innerText();
+  const descriptionText = await description.innerText();
+
+  if (headingText !== expectedHeading) {
     throw new Error(
-      `doWhileWithMax with label:"${label}" still failing after ${maxWaitMs}ms`,
+      `Expected heading: ${expectedHeading}, got: ${headingText}`,
+    );
+  }
+
+  if (descriptionText !== expectedDescription) {
+    throw new Error(
+      `Expected description: ${expectedDescription}, got: ${descriptionText}`,
+    );
+  }
+}
+
+export async function formatTimeOption(option: DMTimeOption) {
+  const timePart = option.replace('time-option-', '');
+  const formattedTime = timePart.replace(/-/g, ' ');
+  return formattedTime;
+}
+
+async function deleteDifferenceFile(
+  fileFolder: string,
+  fileName: string,
+  os: string,
+) {
+  const filePath = path.join(
+    screenshotFolder,
+    fileFolder,
+    `${fileName}-${os}-difference.png`,
+  );
+
+  if (fs.existsSync(filePath)) {
+    // Delete the file if it exists
+    fs.unlinkSync(filePath);
+    console.log(`Deleted difference file at: ${filePath}`);
+  } else {
+    console.log(`No difference file found at: ${filePath}, proceeding...`);
+  }
+}
+
+export async function compareScreenshot(
+  element: ElementHandle<SVGElement | HTMLElement>,
+  testTitle: string,
+  elementState: ElementState,
+  os: string,
+) {
+  const formattedTitle = testTitle.toLowerCase().replace(/\s+/g, '-');
+  await deleteDifferenceFile(formattedTitle, elementState, os);
+
+  const elementScreenshot = await element.screenshot();
+  const folderPath = path.join(screenshotFolder, `${formattedTitle}`);
+
+  // If folder doesn't exist, create folder
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
+  }
+  // If screenshot does not exist, save it to the folder
+  if (!fs.existsSync(path.join(folderPath, `${elementState}-${os}.png`))) {
+    fs.writeFileSync(
+      path.join(folderPath, `${elementState}-${os}.png`),
+      elementScreenshot,
+    );
+  }
+  // If screenshot does exist, compare it to previous screenshot in the folder
+  const previousScreenshot = fs.readFileSync(
+    path.join(folderPath, `${elementState}-${os}.png`),
+  );
+  // If screenshots are different, then create a difference screenshot
+  if (!elementScreenshot.equals(previousScreenshot)) {
+    //  If elements do not match, then take the elementScreenshot and save it to same folder but with a new name of 'difference.png'
+    fs.writeFileSync(
+      path.join(folderPath, `${elementState}-${os}-difference.png`),
+      elementScreenshot,
+    );
+    throw new Error(
+      `Screenshots do not match, see ${screenshotFolder} > ${testTitle} folder > ${elementState}-${os}-difference.png`,
     );
   }
 }
